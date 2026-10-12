@@ -1,0 +1,6 @@
+{
+  "name": "Maraña Admin - Atelier & Stock",
+  "description": "Sistema de gestión integral para taller artesanal Maraña en Neiva: catálogo de amigurumis tejidos a mano, control de inventario, comprobantes bancarios y pedidos.",
+  "requestFramePermissions": ["notifications"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
