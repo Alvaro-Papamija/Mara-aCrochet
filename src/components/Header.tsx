@@ -22,6 +22,8 @@ interface HeaderProps {
   cartCount?: number;
   onChangeTab?: (tab: TabType) => void;
   unreadNotificationCount?: number;
+  onOpenDatabase?: () => void;
+  isDbConnected?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -44,6 +46,8 @@ export const Header: React.FC<HeaderProps> = ({
   cartCount = 0,
   onChangeTab,
   unreadNotificationCount = 0,
+  onOpenDatabase,
+  isDbConnected = false,
 }) => {
   const isSubScreen = activeScreen !== 'main';
 
@@ -244,6 +248,23 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="material-symbols-outlined text-[19px] sm:text-[20px]">print</span>
               </button>
             </>
+          )}
+
+          {onOpenDatabase && (
+            <button
+              aria-label="Estado de Base de Datos MySQL XAMPP"
+              className="relative w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full text-[#4c4353] hover:text-[#6100a4] active:bg-[#f6e9ff] transition-colors"
+              onClick={onOpenDatabase}
+              type="button"
+              title={isDbConnected ? 'MySQL XAMPP Conectado (marana_crochet)' : 'MySQL XAMPP Desconectado'}
+            >
+              <span className="material-symbols-outlined text-[19px] sm:text-[21px] text-[#7b2cbf]">database</span>
+              <span
+                className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full ring-2 ring-[#fff7ff] ${
+                  isDbConnected ? 'bg-[#38b000] animate-pulse' : 'bg-[#ba1a1a]'
+                }`}
+              />
+            </button>
           )}
 
           <button

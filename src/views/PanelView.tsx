@@ -6,6 +6,8 @@ interface PanelViewProps {
   onOpenProductEdit: (product: StockProduct) => void;
   onShowToast: (title: string, message: string, icon?: string) => void;
   products: StockProduct[];
+  onOpenDatabase?: () => void;
+  isDbConnected?: boolean;
 }
 
 export const PanelView: React.FC<PanelViewProps> = ({
@@ -13,6 +15,8 @@ export const PanelView: React.FC<PanelViewProps> = ({
   onOpenProductEdit,
   onShowToast,
   products,
+  onOpenDatabase,
+  isDbConnected = false,
 }) => {
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'week' | 'quarter'>('month');
   const [isExporting, setIsExporting] = useState(false);
@@ -103,6 +107,39 @@ export const PanelView: React.FC<PanelViewProps> = ({
             <span className="material-symbols-outlined text-[18px]">calendar_today</span>
           </button>
         </div>
+
+        {/* Banner de Estado XAMPP MySQL */}
+        {onOpenDatabase && (
+          <div
+            onClick={onOpenDatabase}
+            className="cursor-pointer group flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-[#240046] via-[#3c096c] to-[#5a189a] text-white shadow-md hover:shadow-lg transition-all active:scale-[0.99] border border-purple-500/20"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center border border-white/20">
+                <span className="material-symbols-outlined text-[22px] text-amber-300">database</span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold font-rubik tracking-wide">Base de Datos MySQL (XAMPP)</span>
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      isDbConnected ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
+                    }`}
+                  ></span>
+                </div>
+                <p className="text-[11px] text-purple-200">
+                  {isDbConnected
+                    ? 'Conectada · marana_crochet (MySQL 8.0 / Apache)'
+                    : 'Desconectada · Haz clic para abrir diagnóstico'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/10 group-hover:bg-white/20 text-xs font-bold transition-all">
+              <span>Gestionar</span>
+              <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Operational Alert Banner */}

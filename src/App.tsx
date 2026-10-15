@@ -20,6 +20,19 @@ import { EditarStockView } from './views/EditarStockView';
 import { PedidosView } from './views/PedidosView';
 import { GuiaDespachoView } from './views/GuiaDespachoView';
 import { CatalogoView } from './views/CatalogoView';
+import { DatabaseModal } from './components/DatabaseModal';
+import {
+  DbStatusInfo,
+  checkDbHealth,
+  apiGetProducts,
+  apiSaveProduct,
+  apiGetOrders,
+  apiCreateOrder,
+  apiUpdateOrder,
+  apiGetVouchers,
+  apiCreateVoucher,
+  apiUpdateVoucherStatus,
+} from './services/apiService';
 
 export default function App() {
   // Default to Client account so the initial experience is purely the public boutique catalog
@@ -51,6 +64,46 @@ export default function App() {
   const [profileModalTab, setProfileModalTab] = useState<'access' | 'options' | 'login' | 'register'>('access');
   const [clientSubTab, setClientSubTab] = useState<'catalogo' | 'mis-pedidos'>('catalogo');
   const [isClientCartOpen, setIsClientCartOpen] = useState(false);
+
+  // Estado de conexión con MySQL en XAMPP
+  const [isDbModalOpen, setIsDbModalOpen] = useState(false);
+  const [dbStatus, setDbStatus] = useState<DbStatusInfo>({
+    connected: false,
+    database: 'marana_crochet',
+    server: 'Verificando XAMPP...',
+  });
+
+  // Función para sincronizar con la base de datos MySQL (XAMPP)
+  const syncWithDatabase = async (silent = false) => {
+    try {
+      const health = await checkDbHealth();
+      setDbStatus(health);
+      if (health.connected) {
+        const [dbProducts, dbOrders, dbVouchers] = await Promise.all([
+          apiGetProducts(),
+          apiGetOrders(),
+          apiGetVouchers(),
+        ]);
+        if (dbProducts && dbProducts.length > 0) setProducts(dbProducts);
+        if (dbOrders && dbOrders.length > 0) setOrders(dbOrders);
+        if (dbVouchers && dbVouchers.length > 0) setVouchers(dbVouchers);
+        if (!silent) {
+          showToast(
+            'Base de Datos Conectada',
+            'Sincronizado con MySQL en XAMPP (marana_crochet)',
+            'database'
+          );
+        }
+      }
+    } catch (err) {
+      console.warn('[Maraña] Sincronización MySQL:', err);
+    }
+  };
+
+  // Sincronizar con MySQL al inicio
+  useEffect(() => {
+    syncWithDatabase(true);
+  }, []);
 
   // Inicializar Service Worker y sincronizar notificaciones no leídas
   useEffect(() => {
@@ -290,6 +343,10 @@ export default function App() {
     setVouchers([newVoucher, ...vouchers]);
     setCart([]);
 
+    // Persistir nuevo pedido y comprobante en MySQL (XAMPP)
+    apiCreateOrder(newOrder);
+    apiCreateVoucher(newVoucher);
+
     // Notificar al navegador de la clienta
     notifyOrderStatus(
       newOrder,
@@ -346,6 +403,9 @@ export default function App() {
         })
       );
     }
+    // Persistir aprobación en MySQL
+    apiUpdateVoucherStatus(voucherId, 'aprobado');
+
     showToast(
       'Comprobante Validado',
       'Pago registrado con éxito. Pedido listo para preparación.',
@@ -361,6 +421,7 @@ export default function App() {
     setVouchers((prev) =>
       prev.map((v) => (v.id === voucherId ? { ...v, status: 'rechazado' } : v))
     );
+    apiUpdateVoucherStatus(voucherId, 'rechazado', _reason);
   };
 
   const handleUpdateStockQty = (sku: string, newQty: number) => {
@@ -388,6 +449,8 @@ export default function App() {
         return p;
       })
     );
+    // Sincronizar nuevo stock con MySQL
+    apiSaveProduct({ sku, currentStock: newQty });
   };
 
   const handleSaveStockFromEditor = (sku: string, newStock: number) => {
@@ -410,6 +473,12 @@ export default function App() {
         return o;
       })
     );
+    apiUpdateOrder({
+      id: orderId,
+      status: 'transito',
+      statusLabel: 'En Tránsito',
+      trackingStatus: 'En camino a centro de distribución (Recolectado por Servientrega)',
+    });
   };
 
   const handleScanResult = (code: string) => {
@@ -490,6 +559,8 @@ export default function App() {
         cartCount={cartTotalCount}
         onChangeTab={handleTabChange}
         unreadNotificationCount={unreadNotificationsCount}
+        onOpenDatabase={() => setIsDbModalOpen(true)}
+        isDbConnected={dbStatus.connected}
         onNotificationClick={() => setIsNotificationCenterOpen(true)}
         onProfileClick={() => handleOpenProfile('access')}
         onOpenOptions={() => handleOpenProfile('options')}
@@ -549,6 +620,8 @@ export default function App() {
                 onOpenProductEdit={handleOpenProductEdit}
                 onShowToast={showToast}
                 products={products}
+                onOpenDatabase={() => setIsDbModalOpen(true)}
+                isDbConnected={dbStatus.connected}
               />
             )}
 
@@ -659,6 +732,15 @@ export default function App() {
         }}
         onShowToast={showToast}
         onUpdateOrder={handleUpdateOrder}
+      />
+
+      {/* Database MySQL & XAMPP Diagnostic Modal */}
+      <DatabaseModal
+        isOpen={isDbModalOpen}
+        onClose={() => setIsDbModalOpen(false)}
+        statusInfo={dbStatus}
+        onRefresh={() => syncWithDatabase(false)}
+        onShowToast={showToast}
       />
     </div>
   );
